@@ -16,3 +16,9 @@
 .idea
 /.kotlin
 .claude/settings.local.json
+/app/keystore.jks
+tools/config.bat
+tools/adb.exe
+tools/rclone.exe
+tools/AdbWinApi.dll
+tools/AdbWinUsbApi.dll
