@@ -28,6 +28,8 @@
     <!-- Settings: Auto-export logbook -->
     <string name="settings_auto_export_title">Auto-export Logbook</string>
     <string name="settings_auto_export_subtitle">Automatically save logbook after each fast</string>
+    <string name="settings_auto_export_path">Saving to: %1$s</string>
+    <string name="settings_auto_export_change">Change</string>
     <string name="auto_export_success">Logbook exported</string>
     <string name="auto_export_failed">Auto-export failed</string>
     <string name="auto_export_permission_lost">Export location access lost. Please reconfigure.</string>

@@ -3,6 +3,7 @@ package com.darkrockstudios.apps.fasttrack.screens.settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -26,7 +27,9 @@ fun SettingsScreen(
 	stageAlertsSettingState: Boolean,
 	onStageAlertsSettingChanged: (Boolean) -> Unit,
 	autoExportEnabled: Boolean,
+	autoExportPath: String?,
 	onAutoExportToggleChanged: (Boolean) -> Unit,
+	onChangeExportLocation: () -> Unit,
 	onExportClick: () -> Unit,
 	onImportClick: () -> Unit
 ) {
@@ -58,7 +61,9 @@ fun SettingsScreen(
 			stageAlertsSettingState = stageAlertsSettingState,
 			onStageAlertsSettingChanged = onStageAlertsSettingChanged,
 			autoExportEnabled = autoExportEnabled,
+			autoExportPath = autoExportPath,
 			onAutoExportToggleChanged = onAutoExportToggleChanged,
+			onChangeExportLocation = onChangeExportLocation,
 			onExportClick = onExportClick,
 			onImportClick = onImportClick
 		)
@@ -74,7 +79,9 @@ private fun SettingsList(
 	stageAlertsSettingState: Boolean,
 	onStageAlertsSettingChanged: (Boolean) -> Unit,
 	autoExportEnabled: Boolean,
+	autoExportPath: String?,
 	onAutoExportToggleChanged: (Boolean) -> Unit,
+	onChangeExportLocation: () -> Unit,
 	onExportClick: () -> Unit,
 	onImportClick: () -> Unit
 ) {
@@ -129,13 +136,11 @@ private fun SettingsList(
 				SettingsSectionHeader(title = R.string.settings_section_logbook)
 			}
 			item(key = "auto_export") {
-				SettingsItem(
-					headline = R.string.settings_auto_export_title,
-					details = R.string.settings_auto_export_subtitle,
-					value = autoExportEnabled,
-					onChange = { checked ->
-						onAutoExportToggleChanged(checked)
-					}
+				AutoExportSettingsItem(
+					enabled = autoExportEnabled,
+					path = autoExportPath,
+					onToggleChanged = onAutoExportToggleChanged,
+					onChangeLocation = onChangeExportLocation
 				)
 			}
 			item(key = "export_logbook") {
@@ -223,5 +228,59 @@ private fun SettingsActionItem(
 			)
 		},
 		modifier = Modifier.clickable { onClick() }
+	)
+}
+
+@Composable
+private fun AutoExportSettingsItem(
+	enabled: Boolean,
+	path: String?,
+	onToggleChanged: (Boolean) -> Unit,
+	onChangeLocation: () -> Unit
+) {
+	ListItem(
+		headlineContent = {
+			Text(
+				text = stringResource(id = R.string.settings_auto_export_title),
+				style = MaterialTheme.typography.labelLarge,
+				fontWeight = FontWeight.Bold
+			)
+		},
+		supportingContent = {
+			Column {
+				Text(
+					text = stringResource(id = R.string.settings_auto_export_subtitle),
+					style = MaterialTheme.typography.bodySmall
+				)
+				if (enabled && path != null) {
+					Spacer(modifier = Modifier.height(4.dp))
+					Row(
+						verticalAlignment = Alignment.CenterVertically
+					) {
+						Text(
+							text = stringResource(id = R.string.settings_auto_export_path, path),
+							style = MaterialTheme.typography.bodySmall,
+							color = MaterialTheme.colorScheme.primary,
+							modifier = Modifier.weight(1f)
+						)
+						TextButton(
+							onClick = onChangeLocation,
+							contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+						) {
+							Text(
+								text = stringResource(id = R.string.settings_auto_export_change),
+								style = MaterialTheme.typography.bodySmall
+							)
+						}
+					}
+				}
+			}
+		},
+		trailingContent = {
+			Switch(
+				checked = enabled,
+				onCheckedChange = onToggleChanged
+			)
+		}
 	)
 }

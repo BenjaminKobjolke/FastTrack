@@ -39,10 +39,12 @@ class SettingsActivity : AppCompatActivity() {
 	private lateinit var requestNotificationPermission: ActivityResultLauncher<String>
 	private lateinit var getContent: ActivityResultLauncher<String>
 	private lateinit var createDocument: ActivityResultLauncher<String>
+	private lateinit var openDocument: ActivityResultLauncher<Array<String>>
 	private var pendingNotificationToggle = false
 	private var notificationSettingState by mutableStateOf(false)
 	private var stageAlertsSettingState by mutableStateOf(false)
 	private var autoExportEnabled by mutableStateOf(false)
+	private var autoExportPath by mutableStateOf<String?>(null)
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -53,9 +55,11 @@ class SettingsActivity : AppCompatActivity() {
 		notificationSettingState = settings.getShowFastingNotification()
 		stageAlertsSettingState = settings.getFastingAlerts()
 		autoExportEnabled = settings.getAutoExportEnabled()
+		autoExportPath = getExportPathDisplay()
 		registerNotificationPermissionCallback()
 		registerImportCallback()
 		registerCreateDocumentCallback()
+		registerOpenDocumentCallback()
 
 		setContent {
 			FastTrackTheme {
@@ -67,7 +71,9 @@ class SettingsActivity : AppCompatActivity() {
 					stageAlertsSettingState = stageAlertsSettingState,
 					onStageAlertsSettingChanged = { enabled -> handleStageAlertsSettingChange(enabled) },
 					autoExportEnabled = autoExportEnabled,
+					autoExportPath = autoExportPath,
 					onAutoExportToggleChanged = { enabled -> handleAutoExportToggleChange(enabled) },
+					onChangeExportLocation = { handleChangeExportLocation() },
 					onExportClick = { onExportLogBook() },
 					onImportClick = { onImportLogBook() }
 				)
@@ -161,6 +167,7 @@ class SettingsActivity : AppCompatActivity() {
 				} else {
 					// Permission lost, need to re-select location
 					settings.setAutoExportUri(null)
+					autoExportPath = null
 					createDocument.launch("fastingLogbook.csv")
 				}
 			} else {
@@ -170,6 +177,33 @@ class SettingsActivity : AppCompatActivity() {
 		} else {
 			settings.setAutoExportEnabled(false)
 			autoExportEnabled = false
+		}
+	}
+
+	private fun handleChangeExportLocation() {
+		openDocument.launch(arrayOf("text/csv", "text/comma-separated-values"))
+	}
+
+	private fun getExportPathDisplay(): String? {
+		val uriString = settings.getAutoExportUri() ?: return null
+		val uri = Uri.parse(uriString)
+		// Try to get a user-friendly display name
+		return try {
+			val cursor = contentResolver.query(uri, null, null, null, null)
+			cursor?.use {
+				if (it.moveToFirst()) {
+					val displayNameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+					if (displayNameIndex >= 0) {
+						it.getString(displayNameIndex)
+					} else {
+						uri.lastPathSegment
+					}
+				} else {
+					uri.lastPathSegment
+				}
+			} ?: uri.lastPathSegment
+		} catch (e: Exception) {
+			uri.lastPathSegment
 		}
 	}
 
@@ -183,7 +217,21 @@ class SettingsActivity : AppCompatActivity() {
 			ActivityResultContracts.CreateDocument("text/csv")
 		) { uri: Uri? ->
 			if (uri != null) {
-				// Take persistent permission
+				// Release old permission if exists
+				val oldUriString = settings.getAutoExportUri()
+				if (oldUriString != null) {
+					try {
+						val oldUri = Uri.parse(oldUriString)
+						contentResolver.releasePersistableUriPermission(
+							oldUri,
+							Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+						)
+					} catch (e: Exception) {
+						Napier.w("Failed to release old permission", e)
+					}
+				}
+
+				// Take persistent permission for new URI
 				try {
 					contentResolver.takePersistableUriPermission(
 						uri,
@@ -192,6 +240,7 @@ class SettingsActivity : AppCompatActivity() {
 					settings.setAutoExportUri(uri.toString())
 					settings.setAutoExportEnabled(true)
 					autoExportEnabled = true
+					autoExportPath = getExportPathDisplay()
 
 					// Perform initial export
 					performAutoExport(uri)
@@ -205,6 +254,48 @@ class SettingsActivity : AppCompatActivity() {
 				}
 			}
 			// If uri is null, user cancelled - toggle stays off
+		}
+	}
+
+	private fun registerOpenDocumentCallback() {
+		openDocument = registerForActivityResult(
+			ActivityResultContracts.OpenDocument()
+		) { uri: Uri? ->
+			if (uri != null) {
+				// Release old permission if exists
+				val oldUriString = settings.getAutoExportUri()
+				if (oldUriString != null) {
+					try {
+						val oldUri = Uri.parse(oldUriString)
+						contentResolver.releasePersistableUriPermission(
+							oldUri,
+							Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+						)
+					} catch (e: Exception) {
+						Napier.w("Failed to release old permission", e)
+					}
+				}
+
+				// Take persistent permission for new URI
+				try {
+					contentResolver.takePersistableUriPermission(
+						uri,
+						Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+					)
+					settings.setAutoExportUri(uri.toString())
+					autoExportPath = getExportPathDisplay()
+
+					// Perform export to verify it works
+					performAutoExport(uri)
+				} catch (e: Exception) {
+					Napier.w("Failed to take persistable permission", e)
+					Toast.makeText(
+						this,
+						getString(R.string.auto_export_failed),
+						Toast.LENGTH_SHORT
+					).show()
+				}
+			}
 		}
 	}
 

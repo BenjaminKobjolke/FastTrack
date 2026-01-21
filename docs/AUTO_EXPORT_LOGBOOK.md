@@ -50,6 +50,4 @@ Make sure:
 
 ### Want to change the save location?
 
-1. Disable Auto-export Logbook in Settings
-2. Re-enable it
-3. Choose the new location in the file picker
+Tap **Change** next to the current file path to select a new save location.
