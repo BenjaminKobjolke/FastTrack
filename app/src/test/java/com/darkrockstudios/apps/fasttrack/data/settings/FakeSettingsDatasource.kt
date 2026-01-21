@@ -12,6 +12,8 @@ class FakeSettingsDatasource : SettingsDatasource {
 	private var introSeen: Boolean = false
 	private var showFancyBackground: Boolean = false
 	private var showFastingNotification: Boolean = true
+	private var autoExportEnabled: Boolean = false
+	private var autoExportUri: String? = null
 
 	override fun getFastingAlerts(): Boolean = fastingAlerts
 
@@ -39,6 +41,18 @@ class FakeSettingsDatasource : SettingsDatasource {
 		showFastingNotification = enabled
 	}
 
+	override fun getAutoExportEnabled(): Boolean = autoExportEnabled
+
+	override fun setAutoExportEnabled(enabled: Boolean) {
+		autoExportEnabled = enabled
+	}
+
+	override fun getAutoExportUri(): String? = autoExportUri
+
+	override fun setAutoExportUri(uri: String?) {
+		autoExportUri = uri
+	}
+
 	/**
 	 * Clears all data - useful for test setup/teardown
 	 */
@@ -47,5 +61,7 @@ class FakeSettingsDatasource : SettingsDatasource {
 		introSeen = false
 		showFancyBackground = false
 		showFastingNotification = true
+		autoExportEnabled = false
+		autoExportUri = null
 	}
 }

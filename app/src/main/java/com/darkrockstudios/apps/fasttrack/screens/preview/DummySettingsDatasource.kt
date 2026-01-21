@@ -27,4 +27,12 @@ class DummySettingsDatasource(
 	override fun getShowFastingNotification(): Boolean = true
 
 	override fun setShowFastingNotification(enabled: Boolean) {}
+
+	override fun getAutoExportEnabled(): Boolean = false
+
+	override fun setAutoExportEnabled(enabled: Boolean) {}
+
+	override fun getAutoExportUri(): String? = null
+
+	override fun setAutoExportUri(uri: String?) {}
 }

@@ -25,6 +25,8 @@ fun SettingsScreen(
 	onNotificationSettingChanged: (Boolean) -> Unit,
 	stageAlertsSettingState: Boolean,
 	onStageAlertsSettingChanged: (Boolean) -> Unit,
+	autoExportEnabled: Boolean,
+	onAutoExportToggleChanged: (Boolean) -> Unit,
 	onExportClick: () -> Unit,
 	onImportClick: () -> Unit
 ) {
@@ -55,6 +57,8 @@ fun SettingsScreen(
 			onNotificationSettingChanged = onNotificationSettingChanged,
 			stageAlertsSettingState = stageAlertsSettingState,
 			onStageAlertsSettingChanged = onStageAlertsSettingChanged,
+			autoExportEnabled = autoExportEnabled,
+			onAutoExportToggleChanged = onAutoExportToggleChanged,
 			onExportClick = onExportClick,
 			onImportClick = onImportClick
 		)
@@ -69,6 +73,8 @@ private fun SettingsList(
 	onNotificationSettingChanged: (Boolean) -> Unit,
 	stageAlertsSettingState: Boolean,
 	onStageAlertsSettingChanged: (Boolean) -> Unit,
+	autoExportEnabled: Boolean,
+	onAutoExportToggleChanged: (Boolean) -> Unit,
 	onExportClick: () -> Unit,
 	onImportClick: () -> Unit
 ) {
@@ -121,6 +127,16 @@ private fun SettingsList(
 			}
 			item(key = "logbook_header") {
 				SettingsSectionHeader(title = R.string.settings_section_logbook)
+			}
+			item(key = "auto_export") {
+				SettingsItem(
+					headline = R.string.settings_auto_export_title,
+					details = R.string.settings_auto_export_subtitle,
+					value = autoExportEnabled,
+					onChange = { checked ->
+						onAutoExportToggleChanged(checked)
+					}
+				)
 			}
 			item(key = "export_logbook") {
 				SettingsActionItem(

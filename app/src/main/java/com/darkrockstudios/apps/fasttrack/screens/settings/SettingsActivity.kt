@@ -38,9 +38,11 @@ class SettingsActivity : AppCompatActivity() {
 	private val logRepository by inject<FastingLogRepository>()
 	private lateinit var requestNotificationPermission: ActivityResultLauncher<String>
 	private lateinit var getContent: ActivityResultLauncher<String>
+	private lateinit var createDocument: ActivityResultLauncher<String>
 	private var pendingNotificationToggle = false
 	private var notificationSettingState by mutableStateOf(false)
 	private var stageAlertsSettingState by mutableStateOf(false)
+	private var autoExportEnabled by mutableStateOf(false)
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -50,8 +52,10 @@ class SettingsActivity : AppCompatActivity() {
 
 		notificationSettingState = settings.getShowFastingNotification()
 		stageAlertsSettingState = settings.getFastingAlerts()
+		autoExportEnabled = settings.getAutoExportEnabled()
 		registerNotificationPermissionCallback()
 		registerImportCallback()
+		registerCreateDocumentCallback()
 
 		setContent {
 			FastTrackTheme {
@@ -62,6 +66,8 @@ class SettingsActivity : AppCompatActivity() {
 					onNotificationSettingChanged = { enabled -> handleNotificationSettingChange(enabled) },
 					stageAlertsSettingState = stageAlertsSettingState,
 					onStageAlertsSettingChanged = { enabled -> handleStageAlertsSettingChange(enabled) },
+					autoExportEnabled = autoExportEnabled,
+					onAutoExportToggleChanged = { enabled -> handleAutoExportToggleChange(enabled) },
 					onExportClick = { onExportLogBook() },
 					onImportClick = { onImportLogBook() }
 				)
@@ -141,6 +147,92 @@ class SettingsActivity : AppCompatActivity() {
 	private fun handleStageAlertsSettingChange(enabled: Boolean) {
 		settings.setFastingAlerts(enabled)
 		stageAlertsSettingState = enabled
+	}
+
+	private fun handleAutoExportToggleChange(enabled: Boolean) {
+		if (enabled) {
+			val existingUri = settings.getAutoExportUri()
+			if (existingUri != null) {
+				// Verify permission is still valid
+				val uri = Uri.parse(existingUri)
+				if (hasUriPermission(uri)) {
+					settings.setAutoExportEnabled(true)
+					autoExportEnabled = true
+				} else {
+					// Permission lost, need to re-select location
+					settings.setAutoExportUri(null)
+					createDocument.launch("fastingLogbook.csv")
+				}
+			} else {
+				// No URI saved, launch picker
+				createDocument.launch("fastingLogbook.csv")
+			}
+		} else {
+			settings.setAutoExportEnabled(false)
+			autoExportEnabled = false
+		}
+	}
+
+	private fun hasUriPermission(uri: Uri): Boolean {
+		val persistedUris = contentResolver.persistedUriPermissions
+		return persistedUris.any { it.uri == uri && it.isWritePermission }
+	}
+
+	private fun registerCreateDocumentCallback() {
+		createDocument = registerForActivityResult(
+			ActivityResultContracts.CreateDocument("text/csv")
+		) { uri: Uri? ->
+			if (uri != null) {
+				// Take persistent permission
+				try {
+					contentResolver.takePersistableUriPermission(
+						uri,
+						Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+					)
+					settings.setAutoExportUri(uri.toString())
+					settings.setAutoExportEnabled(true)
+					autoExportEnabled = true
+
+					// Perform initial export
+					performAutoExport(uri)
+				} catch (e: Exception) {
+					Napier.w("Failed to take persistable permission", e)
+					Toast.makeText(
+						this,
+						getString(R.string.auto_export_failed),
+						Toast.LENGTH_SHORT
+					).show()
+				}
+			}
+			// If uri is null, user cancelled - toggle stays off
+		}
+	}
+
+	private fun performAutoExport(uri: Uri) {
+		lifecycle.coroutineScope.launch(Dispatchers.IO) {
+			try {
+				val csvLog = logRepository.exportLog()
+				contentResolver.openOutputStream(uri, "wt")?.use { outputStream ->
+					outputStream.write(csvLog.toByteArray())
+				}
+				withContext(Dispatchers.Main) {
+					Toast.makeText(
+						this@SettingsActivity,
+						getString(R.string.auto_export_success),
+						Toast.LENGTH_SHORT
+					).show()
+				}
+			} catch (e: Exception) {
+				Napier.w("Auto-export failed", e)
+				withContext(Dispatchers.Main) {
+					Toast.makeText(
+						this@SettingsActivity,
+						getString(R.string.auto_export_failed),
+						Toast.LENGTH_SHORT
+					).show()
+				}
+			}
+		}
 	}
 
 	private fun registerImportCallback() {

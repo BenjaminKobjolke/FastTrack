@@ -25,6 +25,13 @@
 
     <string name="export_failed">Failed to export logbook</string>
 
+    <!-- Settings: Auto-export logbook -->
+    <string name="settings_auto_export_title">Auto-export Logbook</string>
+    <string name="settings_auto_export_subtitle">Automatically save logbook after each fast</string>
+    <string name="auto_export_success">Logbook exported</string>
+    <string name="auto_export_failed">Auto-export failed</string>
+    <string name="auto_export_permission_lost">Export location access lost. Please reconfigure.</string>
+
 	<string name="intro_00_title">Welcome to Fast Track!</string>
 	<string name="intro_00_description">What is this app all about?</string>
 

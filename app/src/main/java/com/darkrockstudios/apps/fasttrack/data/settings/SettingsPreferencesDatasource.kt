@@ -61,4 +61,24 @@ class SettingsPreferencesDatasource(
 	override fun setShowFastingNotification(enabled: Boolean) {
 		storage.edit { putBoolean(Data.KEY_FASTING_NOTIFICATION, enabled) }
 	}
+
+	override fun getAutoExportEnabled(): Boolean =
+		storage.getBoolean(Data.KEY_AUTO_EXPORT_ENABLED, false)
+
+	override fun setAutoExportEnabled(enabled: Boolean) {
+		storage.edit { putBoolean(Data.KEY_AUTO_EXPORT_ENABLED, enabled) }
+	}
+
+	override fun getAutoExportUri(): String? =
+		storage.getString(Data.KEY_AUTO_EXPORT_URI, null)
+
+	override fun setAutoExportUri(uri: String?) {
+		storage.edit {
+			if (uri != null) {
+				putString(Data.KEY_AUTO_EXPORT_URI, uri)
+			} else {
+				remove(Data.KEY_AUTO_EXPORT_URI)
+			}
+		}
+	}
 }

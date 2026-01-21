@@ -1,6 +1,9 @@
 package com.darkrockstudios.apps.fasttrack.screens.fasting
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.darkrockstudios.apps.fasttrack.AlertService
@@ -225,7 +228,10 @@ class FastingViewModel(
 		if (repository.isFasting()) {
 			repository.endFast(timeEnded)
 
-			viewModelScope.launch(Dispatchers.IO) { saveFastToLog(repository.getFastStart(), repository.getFastEnd()) }
+			viewModelScope.launch(Dispatchers.IO) {
+				saveFastToLog(repository.getFastStart(), repository.getFastEnd())
+				performAutoExportIfEnabled()
+			}
 
 			Napier.i("Fast ended!")
 
@@ -299,6 +305,59 @@ class FastingViewModel(
 			logRepository.logFast(startTime, endTime)
 		} else {
 			Napier.e("No start time when ending fast!")
+		}
+	}
+
+	private suspend fun performAutoExportIfEnabled() = withContext(Dispatchers.IO) {
+		if (!settingsDatasource.getAutoExportEnabled()) {
+			return@withContext
+		}
+
+		val uriString = settingsDatasource.getAutoExportUri() ?: return@withContext
+		val uri = Uri.parse(uriString)
+
+		// Verify permission is still valid
+		val contentResolver = appContext.contentResolver
+		val persistedUris = contentResolver.persistedUriPermissions
+		val hasPermission = persistedUris.any { it.uri == uri && it.isWritePermission }
+
+		if (!hasPermission) {
+			// Permission lost, disable auto-export and notify user
+			settingsDatasource.setAutoExportEnabled(false)
+			settingsDatasource.setAutoExportUri(null)
+			withContext(Dispatchers.Main) {
+				Toast.makeText(
+					appContext,
+					appContext.getString(R.string.auto_export_permission_lost),
+					Toast.LENGTH_LONG
+				).show()
+			}
+			Napier.w("Auto-export permission lost")
+			return@withContext
+		}
+
+		try {
+			val csvLog = logRepository.exportLog()
+			contentResolver.openOutputStream(uri, "wt")?.use { outputStream ->
+				outputStream.write(csvLog.toByteArray())
+			}
+			withContext(Dispatchers.Main) {
+				Toast.makeText(
+					appContext,
+					appContext.getString(R.string.auto_export_success),
+					Toast.LENGTH_SHORT
+				).show()
+			}
+			Napier.i("Auto-export completed successfully")
+		} catch (e: Exception) {
+			Napier.w("Auto-export failed", e)
+			withContext(Dispatchers.Main) {
+				Toast.makeText(
+					appContext,
+					appContext.getString(R.string.auto_export_failed),
+					Toast.LENGTH_SHORT
+				).show()
+			}
 		}
 	}
 }

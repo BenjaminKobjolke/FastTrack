@@ -10,6 +10,8 @@ object Data
 	const val KEY_FAST_ALERTS = "fast_alerts"
 	const val KEY_FANCY_BACKGROUND = "fancy_background"
 	const val KEY_FASTING_NOTIFICATION = "fasting_notification"
+	const val KEY_AUTO_EXPORT_ENABLED = "auto_export_enabled"
+	const val KEY_AUTO_EXPORT_URI = "auto_export_uri"
 
 	private const val CM_INCH_RATIO = 2.54
 	fun inchToCm(inches: Int): Double = inches.toDouble() * CM_INCH_RATIO

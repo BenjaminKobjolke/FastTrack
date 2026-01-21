@@ -16,4 +16,9 @@ interface SettingsDatasource {
 
 	fun getShowFastingNotification(): Boolean
 	fun setShowFastingNotification(enabled: Boolean)
+
+	fun getAutoExportEnabled(): Boolean
+	fun setAutoExportEnabled(enabled: Boolean)
+	fun getAutoExportUri(): String?
+	fun setAutoExportUri(uri: String?)
 }
