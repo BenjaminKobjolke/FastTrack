@@ -18,6 +18,13 @@ validated through real world testing using a ketone breath meter, as well as rea
 even still, it is just a rule-of-thumb. There are many things that would affect what stage you are in on this particular
 fast.
 
+## Features
+
+- Track your current fast with real-time progress
+- View fasting stages and milestones
+- Maintain a logbook of all your completed fasts
+- **Auto-export logbook**: Automatically save your fasting history as CSV after each fast ([details](docs/AUTO_EXPORT_LOGBOOK.md))
+
 ## Privacy
 
 We don't collect any data whatsoever. The app doesn't even have the INTERNET permission. The app operates entirely
